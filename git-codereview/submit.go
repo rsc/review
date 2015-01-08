@@ -104,7 +104,7 @@ func cmdSubmit(args []string) {
 	// but we need extended information and the reply is in the
 	// "SUBMITTED" state anyway, so ignore the GerritChange
 	// in the response and fetch a new one below.
-	if err := gerritAPI("/a/changes/"+fullChangeID(b, c)+"/submit", []byte(`{"wait_for_merge": true}`), nil); err != nil {
+	if err := gerritAPI("POST", "/a/changes/"+fullChangeID(b, c)+"/submit", []byte(`{"wait_for_merge": true}`), nil); err != nil {
 		dief("cannot submit: %v", err)
 	}
 

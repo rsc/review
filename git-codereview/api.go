@@ -146,7 +146,7 @@ func (e *gerritError) Error() string {
 // gerritAPI expects to get a 200 response with a body consisting of an
 // anti-xss line (]})' or some such) followed by JSON.
 // If requestBody != nil, gerritAPI sets the Content-Type to application/json.
-func gerritAPI(path string, requestBody []byte, target interface{}) error {
+func gerritAPI(verb, path string, requestBody []byte, target interface{}) error {
 	// Strictly speaking, we might be able to use unauthenticated
 	// access, by removing the /a/ from the URL, but that assumes
 	// that all the information we care about is publicly visible.
@@ -159,10 +159,9 @@ func gerritAPI(path string, requestBody []byte, target interface{}) error {
 	}
 
 	url := auth.url + path
-	method := "GET"
+	method := verb
 	var reader io.Reader
 	if requestBody != nil {
-		method = "POST"
 		reader = bytes.NewReader(requestBody)
 	}
 	req, err := http.NewRequest(method, url, reader)
@@ -191,7 +190,7 @@ func gerritAPI(path string, requestBody []byte, target interface{}) error {
 	if err != nil {
 		return fmt.Errorf("reading response body: %v", err)
 	}
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode/10*10 != 200 { // accept 200 OK, 201 Created, 204 No Content, etc
 		return &gerritError{url, resp.StatusCode, resp.Status, string(body)}
 	}
 
@@ -224,7 +223,7 @@ func fullChangeID(b *Branch, c *Commit) string {
 // See https://gerrit-review.googlesource.com/Documentation/rest-api-changes.html#change-id for details.
 func readGerritChange(changeID string) (*GerritChange, error) {
 	var c GerritChange
-	err := gerritAPI("/a/changes/"+changeID, nil, &c)
+	err := gerritAPI("GET", "/a/changes/"+changeID, nil, &c)
 	if err != nil {
 		return nil, err
 	}
@@ -264,10 +263,11 @@ func (g *GerritChange) LabelNames() []string {
 
 // GerritMessage is the JSON struct for a Gerrit MessageInfo.
 type GerritMessage struct {
-	Author struct {
-		Name string
-	}
-	Message string
+	ID             string
+	Updated        string
+	RevisionNumber int `json:"revision_number"`
+	Author         *GerritAccount
+	Message        string
 }
 
 // GerritLabel is the JSON struct for a Gerrit LabelInfo.

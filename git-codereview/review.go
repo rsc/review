@@ -130,6 +130,8 @@ func main() {
 		cmdBranchpoint(args)
 	case "change":
 		cmdChange(args)
+	case "comments":
+		cmdComments(args)
 	case "gofmt":
 		cmdGofmt(args)
 	case "hook-invoke":
